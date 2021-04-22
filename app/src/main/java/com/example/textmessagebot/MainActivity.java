@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -21,6 +22,8 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity {
 
     TextView tv_receivedMessage;
+
+    String phoneNumber = "";
 
     MessageReceiver messageReceiver;
     SmsManager smsManager;
@@ -64,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = intent.getExtras();
             Object[] pdus = (Object[]) bundle.get("pdus");
             SmsMessage[] messages = new SmsMessage[pdus.length];
-            String phoneNumber = "";
             for (int i=0; i<messages.length; i++) {
                 messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i], bundle.getString("format"));
                 phoneNumber = messages[i].getOriginatingAddress();
@@ -74,13 +76,33 @@ public class MainActivity extends AppCompatActivity {
             try {
                 smsManager = SmsManager.getDefault();
                 smsManager.sendTextMessage(phoneNumber, null, "Wassup", null, null);
+                Log.d("TAG", "Replied Instantly");
             } catch (Exception e) {
                 Toast.makeText(MainActivity.this, "Message Failed", Toast.LENGTH_LONG).show();
                 Log.d("TAG", e.toString());
                 e.printStackTrace();
             }
 
-            Log.d("TAG", "Replied");
+            Handler delayedResponse = new Handler();
+            delayedResponse.postDelayed(sendSms("Hello there!"), 10000);
         }
+    }
+
+    public Runnable sendSms(String message) {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    smsManager = SmsManager.getDefault();
+                    smsManager.sendTextMessage(phoneNumber, null, message, null, null);
+                    Log.d("TAG", "Delayed reply");
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Message Failed", Toast.LENGTH_LONG).show();
+                    Log.d("TAG", e.toString());
+                    e.printStackTrace();
+                }
+            }
+        };
+        return runnable;
     }
 }
